@@ -136,7 +136,7 @@ export default function Step5() {
             <h3 className="font-semibold text-blue-900">Como usar:</h3>
             <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside">
               <li>Acesse <a href="https://claude.ai" target="_blank" className="font-semibold hover:underline">claude.ai</a></li>
-              <li>Procure por "MCP SAACS" ou "Custom MCP Connectors"</li>
+              <li>Procure por &quot;MCP SAACS&quot; ou &quot;Custom MCP Connectors&quot;</li>
               <li>Cole o Client ID e Client Secret acima</li>
               <li>Comece a estruturar seu projeto com Claude!</li>
             </ol>
