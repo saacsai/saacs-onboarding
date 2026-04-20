@@ -75,40 +75,40 @@ export default function Step1() {
 
       <QuestionCard
         title={`Bem-vindo, ${lead.nome}! 👋`}
-        description="Vamos estruturar seu projeto em 5 minutos"
+        description="Vamos estruturar seu projeto TILAPIA em 5 minutos"
       >
         <div className="space-y-6">
-          <div className="bg-blue-50 p-6 rounded-lg">
-            <h3 className="font-semibold text-saacs-900 mb-4">
+          <div className="bg-gradient-tilapia text-white p-8 rounded-xl">
+            <h3 className="font-bold text-lg mb-4">
               O que você vai fazer:
             </h3>
             <ul className="space-y-3">
               {[
-                'Responder perguntas sobre seu projeto',
-                'Alimentar a IA com contexto',
-                'Receber credenciais para Claude.ai',
-                'Começar a estruturar automaticamente',
+                'Responder perguntas estruturadas sobre seu projeto',
+                'Alimentar Claude.ai com contexto estratégico',
+                'Receber credenciais OAuth personalizadas',
+                'Começar a estruturação automática TILAPIA',
               ].map((item, i) => (
                 <li key={i} className="flex items-start gap-3">
-                  <CheckCircle2 className="text-saacs-600 flex-shrink-0 mt-0.5" size={20} />
-                  <span className="text-gray-700">{item}</span>
+                  <CheckCircle2 className="flex-shrink-0 mt-0.5" size={20} />
+                  <span>{item}</span>
                 </li>
               ))}
             </ul>
           </div>
 
-          <div className="bg-amber-50 border-l-4 border-amber-400 p-4">
-            <p className="text-sm text-amber-800">
-              <strong>Dica:</strong> Tenha em mãos informações sobre seu projeto para responder com precisão.
+          <div className="bg-amber-50 border-l-4 border-amber-400 p-6 rounded-lg">
+            <p className="text-sm text-amber-900">
+              <strong>💡 Dica:</strong> Tenha em mãos informações detalhadas sobre seu projeto. Quanto mais preciso, melhor o resultado!
             </p>
           </div>
 
           <div className="flex gap-4">
             <Link
               href={`/standard/${leadId}/step-2`}
-              className="flex-1 bg-saacs-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-saacs-700 transition-colors flex items-center justify-center gap-2"
+              className="flex-1 bg-gradient-tilapia text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
             >
-              Começar <ArrowRight size={20} />
+              Começar Agora <ArrowRight size={20} />
             </Link>
           </div>
         </div>
