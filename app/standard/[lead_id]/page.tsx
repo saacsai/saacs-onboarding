@@ -33,7 +33,7 @@ export default function Step1() {
         }
 
         // Verificar status em pre_anamnese_tilapia_standard
-        const { data: anamnese } = await supabase
+        const { data: anamnese, error: anamneseError } = await supabase
           .from('pre_anamnese_tilapia_standard')
           .select('status')
           .eq('projeto_id', leadId)
@@ -45,11 +45,15 @@ export default function Step1() {
           return
         }
 
-        const { data: cliente } = await supabase
+        const { data: cliente, error: clienteError } = await supabase
           .from('clients')
           .select('nome, email')
           .eq('id', projeto.client_id)
           .single()
+
+        if (clienteError) {
+          console.warn('Cliente não encontrado:', clienteError)
+        }
 
         setLead({
           id: projeto.id,
