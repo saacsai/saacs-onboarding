@@ -15,7 +15,7 @@ export default function QuestionCard({
 }: QuestionCardProps) {
   return (
     <div className="bg-white p-8 rounded-lg shadow-md animate-fade-in">
-      <h2 className="text-2xl font-bold text-saacs-900 mb-2">{title}</h2>
+      <h2 className="text-lg font-bold text-saacs-900 mb-6">{title}</h2>
       {description && (
         <p className="text-gray-600 mb-6">{description}</p>
       )}

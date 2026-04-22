@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import ProgressBar from '@/components/ProgressBar'
@@ -13,7 +13,64 @@ export default function Step3() {
   const router = useRouter()
   const leadId = params.lead_id as string
   const [resposta, setResposta] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [pergunta, setPergunta] = useState('')
+  const [placeholder, setPlaceholder] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [isReadOnly, setIsReadOnly] = useState(false)
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const { data: projeto } = await supabase
+          .from('tlp_projetos')
+          .select('*')
+          .eq('id', leadId)
+          .single()
+
+        if (!projeto) return
+
+        const { data: cliente } = await supabase
+          .from('clients')
+          .select('atividade')
+          .eq('id', projeto.client_id)
+          .single()
+
+        const { data: questoes } = await supabase
+          .from('pre_anamnese_questoes')
+          .select('questao_2, placeholder_2')
+          .eq('tipo_atividade', cliente?.atividade || 'Outros')
+          .single()
+
+        if (questoes) {
+          setPergunta(questoes.questao_2 || '')
+          setPlaceholder(questoes.placeholder_2 || '')
+        }
+
+        const { data: anamnese } = await supabase
+          .from('pre_anamnese_tilapia_standard')
+          .select('resposta_2, status')
+          .eq('projeto_id', leadId)
+          .single()
+
+        if (anamnese?.resposta_2) {
+          setResposta(anamnese.resposta_2)
+        }
+
+        if (anamnese?.status === 'completo') {
+          setIsReadOnly(true)
+        }
+      } catch (err) {
+        console.error('Erro ao carregar dados:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (leadId) {
+      loadData()
+    }
+  }, [leadId])
 
   const handleNext = async () => {
     if (!resposta.trim()) {
@@ -22,41 +79,60 @@ export default function Step3() {
     }
 
     try {
-      setLoading(true)
+      setSaving(true)
 
-      await supabase.from('pre_anamnese_standard').insert([
-        {
-          lead_id: leadId,
-          passo: 3,
-          pergunta: 'Qual é o resultado esperado em números?',
-          resposta,
-          created_at: new Date().toISOString(),
-        },
-      ])
+      const { data: existente } = await supabase
+        .from('pre_anamnese_tilapia_standard')
+        .select('id')
+        .eq('projeto_id', leadId)
+        .single()
+
+      if (existente) {
+        await supabase
+          .from('pre_anamnese_tilapia_standard')
+          .update({
+            resposta_2: resposta,
+            updated_at: new Date().toISOString()
+          })
+          .eq('projeto_id', leadId)
+      } else {
+        await supabase.from('pre_anamnese_tilapia_standard').insert({
+          projeto_id: leadId,
+          resposta_2: resposta,
+          status: 'em_progresso'
+        })
+      }
 
       router.push(`/standard/${leadId}/step-4`)
     } catch (err) {
-      console.error(err)
+      console.error('Erro ao salvar:', err)
       alert('Erro ao salvar resposta')
     } finally {
-      setLoading(false)
+      setSaving(false)
     }
+  }
+
+  if (loading) {
+    return <div className="py-8 text-center"><div className="animate-spin inline-block"><div className="w-8 h-8 border-4 border-tilapia-dark border-t-transparent rounded-full" /></div></div>
   }
 
   return (
     <div className="py-8">
-      <ProgressBar current={3} total={5} />
+      <ProgressBar current={3} total={6} />
 
       <QuestionCard
-        title="Qual é o resultado esperado em números?"
-        description="Quantas pessoas serão beneficiadas? Qual % de melhoria? Quanto em R$ será gerado?"
+        title={pergunta || 'Carregando...'}
+        description={isReadOnly ? 'Leitura apenas' : ''}
       >
-        <div className="space-y-4">
+        <div className="space-y-6">
           <textarea
             value={resposta}
-            onChange={(e) => setResposta(e.target.value)}
-            placeholder="Ex: 500 agricultores beneficiados, 30% aumento de produtividade, R$ 250.000 em renda adicional..."
-            className="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-saacs-600 min-h-32"
+            onChange={(e) => !isReadOnly && setResposta(e.target.value)}
+            placeholder={placeholder}
+            disabled={isReadOnly}
+            className={`w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-tilapia-dark min-h-32 ${
+              isReadOnly ? 'bg-gray-50 text-gray-600 cursor-not-allowed' : ''
+            }`}
           />
 
           <div className="flex gap-4">
@@ -66,13 +142,15 @@ export default function Step3() {
             >
               <ArrowLeft size={20} /> Voltar
             </Link>
-            <button
-              onClick={handleNext}
-              disabled={loading}
-              className="flex-1 bg-saacs-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-saacs-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              Próximo <ArrowRight size={20} />
-            </button>
+            {!isReadOnly && (
+              <button
+                onClick={handleNext}
+                disabled={saving}
+                className="flex-1 bg-tilapia-dark text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                Próximo <ArrowRight size={20} />
+              </button>
+            )}
           </div>
         </div>
       </QuestionCard>

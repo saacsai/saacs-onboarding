@@ -6,7 +6,7 @@ import Link from 'next/link'
 import ProgressBar from '@/components/ProgressBar'
 import QuestionCard from '@/components/QuestionCard'
 import { supabase, LeadStandard } from '@/lib/supabase'
-import { CheckCircle2, ArrowRight } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 
 export default function Step1() {
   const params = useParams()
@@ -20,28 +20,47 @@ export default function Step1() {
     async function fetchLead() {
       try {
         setLoading(true)
-        const { data, error } = await supabase
-          .from('leads_standard')
+        const { data: projeto, error: projectError } = await supabase
+          .from('tlp_projetos')
           .select('*')
           .eq('id', leadId)
           .single()
 
-        if (error) {
-          setError('Lead não encontrado')
+        if (projectError || !projeto) {
+          setError('Projeto não encontrado')
+          setLoading(false)
           return
         }
 
-        setLead(data as LeadStandard)
+        // Verificar status em pre_anamnese_tilapia_standard
+        const { data: anamnese } = await supabase
+          .from('pre_anamnese_tilapia_standard')
+          .select('status')
+          .eq('projeto_id', leadId)
+          .single()
 
-        // Atualizar status
-        await supabase
-          .from('leads_standard')
-          .update({ status: 'onboarding_iniciado' })
-          .eq('id', leadId)
+        // Se já completado, redireciona para tela de resumo
+        if (anamnese?.status === 'completo') {
+          router.push(`/standard/${leadId}/step-5?completed=true`)
+          return
+        }
+
+        const { data: cliente } = await supabase
+          .from('clients')
+          .select('nome, email')
+          .eq('id', projeto.client_id)
+          .single()
+
+        setLead({
+          id: projeto.id,
+          nome: cliente?.nome || 'Usuário',
+          email: cliente?.email || '',
+          status: projeto.status
+        } as LeadStandard)
+        setLoading(false)
       } catch (err) {
         setError('Erro ao carregar dados')
         console.error(err)
-      } finally {
         setLoading(false)
       }
     }
@@ -49,13 +68,13 @@ export default function Step1() {
     if (leadId) {
       fetchLead()
     }
-  }, [leadId])
+  }, [leadId, router])
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin">
-          <div className="w-12 h-12 border-4 border-saacs-600 border-t-transparent rounded-full" />
+          <div className="w-12 h-12 border-4 border-tilapia-dark border-t-transparent rounded-full" />
         </div>
       </div>
     )
@@ -71,42 +90,39 @@ export default function Step1() {
 
   return (
     <div className="py-8">
-      <ProgressBar current={1} total={5} />
+      <ProgressBar current={1} total={6} />
 
       <QuestionCard
-        title={`Bem-vindo, ${lead.nome}! 👋`}
-        description="Vamos estruturar seu projeto TILAPIA em 5 minutos"
+        title={`Bem vindo(a) ${lead.nome}!`}
+        description="Antes de degustar a TILAPIA precisamos limpá-la, tirar as escamas, tirar a pele, tirar os espinhos e deixar só o filé."
       >
         <div className="space-y-6">
-          <div className="bg-gradient-tilapia text-white p-8 rounded-xl">
-            <h3 className="font-bold text-lg mb-4">
-              O que você vai fazer:
-            </h3>
-            <ul className="space-y-3">
-              {[
-                'Responder perguntas estruturadas sobre seu projeto',
-                'Alimentar Claude.ai com contexto estratégico',
-                'Receber credenciais OAuth personalizadas',
-                'Começar a estruturação automática TILAPIA',
-              ].map((item, i) => (
-                <li key={i} className="flex items-start gap-3">
-                  <CheckCircle2 className="flex-shrink-0 mt-0.5" size={20} />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
+          {/* Quadro azul - 3 opções */}
+          <div className="bg-tilapia-dark text-white p-8 rounded-lg">
+            <h3 className="font-bold text-lg mb-4">Você tem 3 opções para fazer isso:</h3>
+            <ol className="space-y-3 list-decimal list-inside">
+              <li>Achar que é besteira e fazer isso de forma displicente</li>
+              <li>Pedir para alguém fazer por você (nunca vai ser igual, mesmo pela IA)</li>
+              <li>Agir como um verdadeiro chefe e fazer como deve ser feito</li>
+            </ol>
           </div>
 
-          <div className="bg-amber-50 border-l-4 border-amber-400 p-6 rounded-lg">
-            <p className="text-sm text-amber-900">
-              <strong>💡 Dica:</strong> Tenha em mãos informações detalhadas sobre seu projeto. Quanto mais preciso, melhor o resultado!
+          {/* Quadro de dica - Confúcio */}
+          <div className="bg-blue-50 border-l-4 border-tilapia-dark p-6 rounded-lg">
+            <p className="text-sm text-gray-700">
+              <strong className="text-tilapia-dark">💡 Lembre-se:</strong>
+              <br />
+              <em>"Em todas as coisas o sucesso depende de uma preparação prévia, e sem tal preparação a falha é certa"</em>
+              <br />
+              <span className="text-gray-600">— Confúcio</span>
             </p>
           </div>
 
+          {/* Botão Começar */}
           <div className="flex gap-4">
             <Link
               href={`/standard/${leadId}/step-2`}
-              className="flex-1 bg-gradient-tilapia text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              className="flex-1 bg-tilapia-dark text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
             >
               Começar Agora <ArrowRight size={20} />
             </Link>

@@ -5,104 +5,135 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import ProgressBar from '@/components/ProgressBar'
 import QuestionCard from '@/components/QuestionCard'
-import { supabase, LeadStandard, PreAnamnese } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import { ArrowRight, ArrowLeft } from 'lucide-react'
 
 export default function Step4() {
   const params = useParams()
   const router = useRouter()
   const leadId = params.lead_id as string
-  const [lead, setLead] = useState<LeadStandard | null>(null)
-  const [respostas, setRespostas] = useState<PreAnamnese[]>([])
+  const [resposta, setResposta] = useState('')
+  const [pergunta, setPergunta] = useState('')
+  const [placeholder, setPlaceholder] = useState('')
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [isReadOnly, setIsReadOnly] = useState(false)
 
   useEffect(() => {
     async function loadData() {
       try {
-        const { data: leadData } = await supabase
-          .from('leads_standard')
+        const { data: projeto } = await supabase
+          .from('tlp_projetos')
           .select('*')
           .eq('id', leadId)
           .single()
 
-        const { data: respostasData } = await supabase
-          .from('pre_anamnese_standard')
-          .select('*')
-          .eq('lead_id', leadId)
-          .order('passo', { ascending: true })
+        if (!projeto) return
 
-        setLead(leadData)
-        setRespostas(respostasData || [])
+        const { data: cliente } = await supabase
+          .from('clients')
+          .select('atividade')
+          .eq('id', projeto.client_id)
+          .single()
+
+        const { data: questoes } = await supabase
+          .from('pre_anamnese_questoes')
+          .select('questao_3, placeholder_3')
+          .eq('tipo_atividade', cliente?.atividade || 'Outros')
+          .single()
+
+        if (questoes) {
+          setPergunta(questoes.questao_3 || '')
+          setPlaceholder(questoes.placeholder_3 || '')
+        }
+
+        const { data: anamnese } = await supabase
+          .from('pre_anamnese_tilapia_standard')
+          .select('resposta_3, status')
+          .eq('projeto_id', leadId)
+          .single()
+
+        if (anamnese?.resposta_3) {
+          setResposta(anamnese.resposta_3)
+        }
+
+        if (anamnese?.status === 'completo') {
+          setIsReadOnly(true)
+        }
       } catch (err) {
-        console.error(err)
+        console.error('Erro ao carregar dados:', err)
       } finally {
         setLoading(false)
       }
     }
 
-    loadData()
+    if (leadId) {
+      loadData()
+    }
   }, [leadId])
 
-  const handleConfirm = async () => {
-    try {
-      setLoading(true)
+  const handleNext = async () => {
+    if (!resposta.trim()) {
+      alert('Por favor, responda a pergunta')
+      return
+    }
 
-      await supabase
-        .from('leads_standard')
-        .update({ status: 'onboarding_completo' })
-        .eq('id', leadId)
+    try {
+      setSaving(true)
+
+      const { data: existente } = await supabase
+        .from('pre_anamnese_tilapia_standard')
+        .select('id')
+        .eq('projeto_id', leadId)
+        .single()
+
+      if (existente) {
+        await supabase
+          .from('pre_anamnese_tilapia_standard')
+          .update({
+            resposta_3: resposta,
+            updated_at: new Date().toISOString()
+          })
+          .eq('projeto_id', leadId)
+      } else {
+        await supabase.from('pre_anamnese_tilapia_standard').insert({
+          projeto_id: leadId,
+          resposta_3: resposta,
+          status: 'em_progresso'
+        })
+      }
 
       router.push(`/standard/${leadId}/step-5`)
     } catch (err) {
-      console.error(err)
-      alert('Erro ao confirmar')
+      console.error('Erro ao salvar:', err)
+      alert('Erro ao salvar resposta')
     } finally {
-      setLoading(false)
+      setSaving(false)
     }
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin">
-          <div className="w-12 h-12 border-4 border-saacs-600 border-t-transparent rounded-full" />
-        </div>
-      </div>
-    )
+    return <div className="py-8 text-center"><div className="animate-spin inline-block"><div className="w-8 h-8 border-4 border-tilapia-dark border-t-transparent rounded-full" /></div></div>
   }
 
   return (
     <div className="py-8">
-      <ProgressBar current={4} total={5} />
+      <ProgressBar current={4} total={6} />
 
       <QuestionCard
-        title="Revise seus dados"
-        description="Confirme que todas as informações estão corretas"
+        title={pergunta || 'Carregando...'}
+        description={isReadOnly ? 'Leitura apenas' : ''}
       >
         <div className="space-y-6">
-          <div className="bg-gray-50 p-6 rounded-lg space-y-4">
-            <div>
-              <label className="text-sm font-semibold text-gray-700">Nome</label>
-              <p className="text-gray-900">{lead?.nome}</p>
-            </div>
-
-            <div>
-              <label className="text-sm font-semibold text-gray-700">Email</label>
-              <p className="text-gray-900">{lead?.email}</p>
-            </div>
-
-            <div>
-              <label className="text-sm font-semibold text-gray-700">Tipo de Projeto</label>
-              <p className="text-gray-900">{lead?.tipo_projeto}</p>
-            </div>
-
-            {respostas.map((r) => (
-              <div key={r.id}>
-                <label className="text-sm font-semibold text-gray-700">{r.pergunta}</label>
-                <p className="text-gray-900 text-sm mt-1">{r.resposta}</p>
-              </div>
-            ))}
-          </div>
+          <textarea
+            value={resposta}
+            onChange={(e) => !isReadOnly && setResposta(e.target.value)}
+            placeholder={placeholder}
+            disabled={isReadOnly}
+            className={`w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-tilapia-dark min-h-32 ${
+              isReadOnly ? 'bg-gray-50 text-gray-600 cursor-not-allowed' : ''
+            }`}
+          />
 
           <div className="flex gap-4">
             <Link
@@ -111,13 +142,15 @@ export default function Step4() {
             >
               <ArrowLeft size={20} /> Voltar
             </Link>
-            <button
-              onClick={handleConfirm}
-              disabled={loading}
-              className="flex-1 bg-saacs-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-saacs-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              Confirmar <ArrowRight size={20} />
-            </button>
+            {!isReadOnly && (
+              <button
+                onClick={handleNext}
+                disabled={saving}
+                className="flex-1 bg-tilapia-dark text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                Próximo <ArrowRight size={20} />
+              </button>
+            )}
           </div>
         </div>
       </QuestionCard>

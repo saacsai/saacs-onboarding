@@ -1,168 +1,168 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import ProgressBar from '@/components/ProgressBar'
 import QuestionCard from '@/components/QuestionCard'
-import { supabase, LeadStandard } from '@/lib/supabase'
-import { Copy, CheckCircle2, ExternalLink } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { ArrowRight, ArrowLeft } from 'lucide-react'
 
 export default function Step5() {
   const params = useParams()
+  const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
+  const router = useRouter()
   const leadId = params.lead_id as string
-  const [lead, setLead] = useState<LeadStandard | null>(null)
-  const [project, setProject] = useState<any>(null)
+  const completed = searchParams.get('completed') === 'true'
+  const [anamnese, setAnamnese] = useState<any>(null)
+  const [questoes, setQuestoes] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [copied, setCopied] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [isReadOnly, setIsReadOnly] = useState(false)
 
   useEffect(() => {
     async function loadData() {
       try {
-        const { data: leadData } = await supabase
-          .from('leads_standard')
+        const { data: projeto } = await supabase
+          .from('tlp_projetos')
           .select('*')
           .eq('id', leadId)
           .single()
 
-        setLead(leadData)
+        if (!projeto) return
 
-        if (leadData?.projeto_id) {
-          const { data: projectData } = await supabase
-            .from('tlp_projetos')
-            .select('*')
-            .eq('id', leadData.projeto_id)
-            .single()
+        const { data: cliente } = await supabase
+          .from('clients')
+          .select('atividade')
+          .eq('id', projeto.client_id)
+          .single()
 
-          setProject(projectData)
+        const { data: q } = await supabase
+          .from('pre_anamnese_questoes')
+          .select('questao_1, questao_2, questao_3')
+          .eq('tipo_atividade', cliente?.atividade || 'Outros')
+          .single()
+
+        setQuestoes(q)
+
+        const { data: a } = await supabase
+          .from('pre_anamnese_tilapia_standard')
+          .select('resposta_1, resposta_2, resposta_3, status')
+          .eq('projeto_id', leadId)
+          .single()
+
+        setAnamnese(a)
+
+        if (a?.status === 'completo') {
+          setIsReadOnly(true)
         }
       } catch (err) {
-        console.error(err)
+        console.error('Erro ao carregar:', err)
       } finally {
         setLoading(false)
       }
     }
 
-    loadData()
+    if (leadId) {
+      loadData()
+    }
   }, [leadId])
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+  const handleConfirm = async () => {
+    try {
+      setSaving(true)
+
+      await supabase
+        .from('pre_anamnese_tilapia_standard')
+        .update({ status: 'completo', updated_at: new Date().toISOString() })
+        .eq('projeto_id', leadId)
+
+      await supabase
+        .from('tlp_projetos')
+        .update({ passo_zero_status: 'completo' })
+        .eq('id', leadId)
+
+      router.push(`/standard/${leadId}/step-6`)
+    } catch (err) {
+      console.error('Erro:', err)
+      alert('Erro ao confirmar')
+    } finally {
+      setSaving(false)
+    }
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin">
-          <div className="w-12 h-12 border-4 border-saacs-600 border-t-transparent rounded-full" />
-        </div>
-      </div>
-    )
+    return <div className="py-8 text-center"><div className="animate-spin inline-block"><div className="w-8 h-8 border-4 border-tilapia-dark border-t-transparent rounded-full" /></div></div>
   }
 
   return (
     <div className="py-8">
-      <ProgressBar current={5} total={5} />
+      <ProgressBar current={5} total={6} />
 
-      <QuestionCard title="Pronto! 🎉" description="Suas credenciais estão prontas">
+      <QuestionCard
+        title={completed ? "ONBOARDING completado com sucesso!" : "Revise suas respostas"}
+        description={completed ? "Abaixo estão as respostas coletadas" : "Confirme que tudo está correto antes de enviar"}
+      >
         <div className="space-y-6">
-          {/* Success Message */}
-          <div className="bg-green-50 border-l-4 border-green-400 p-6 rounded">
-            <div className="flex items-start gap-3">
-              <CheckCircle2 className="text-green-600 flex-shrink-0 mt-0.5" size={24} />
+          <div className="bg-gray-50 p-6 rounded-lg space-y-6">
+            {questoes?.questao_1 && (
               <div>
-                <h3 className="font-semibold text-green-900 mb-2">Sucesso!</h3>
-                <p className="text-green-800 text-sm">
-                  Seu projeto foi criado e as credenciais de acesso foram geradas.
-                </p>
+                <label className="text-sm font-semibold text-tilapia-dark">Pergunta 1</label>
+                <p className="text-gray-600 text-sm mb-2">{questoes.questao_1}</p>
+                <div className="bg-white p-3 border border-gray-300 rounded text-gray-900 text-sm">
+                  {anamnese?.resposta_1 || '(sem resposta)'}
+                </div>
               </div>
-            </div>
+            )}
+
+            {questoes?.questao_2 && (
+              <div>
+                <label className="text-sm font-semibold text-tilapia-dark">Pergunta 2</label>
+                <p className="text-gray-600 text-sm mb-2">{questoes.questao_2}</p>
+                <div className="bg-white p-3 border border-gray-300 rounded text-gray-900 text-sm">
+                  {anamnese?.resposta_2 || '(sem resposta)'}
+                </div>
+              </div>
+            )}
+
+            {questoes?.questao_3 && (
+              <div>
+                <label className="text-sm font-semibold text-tilapia-dark">Pergunta 3</label>
+                <p className="text-gray-600 text-sm mb-2">{questoes.questao_3}</p>
+                <div className="bg-white p-3 border border-gray-300 rounded text-gray-900 text-sm">
+                  {anamnese?.resposta_3 || '(sem resposta)'}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Credentials */}
-          {project && (
-            <div className="bg-gray-50 p-6 rounded-lg space-y-4">
-              <h3 className="font-semibold text-saacs-900">Suas Credenciais OAuth:</h3>
-
-              {/* Client ID */}
-              <div>
-                <label className="text-xs font-semibold text-gray-700 uppercase">
-                  Client ID
-                </label>
-                <div className="flex items-center gap-2 mt-2">
-                  <code className="flex-1 bg-white p-3 rounded border border-gray-300 text-sm font-mono">
-                    {project.oauth_client_id}
-                  </code>
-                  <button
-                    onClick={() => copyToClipboard(project.oauth_client_id)}
-                    className="p-2 hover:bg-white rounded transition-colors"
-                    title="Copiar"
-                  >
-                    <Copy
-                      size={20}
-                      className={copied ? 'text-green-600' : 'text-gray-600'}
-                    />
-                  </button>
-                </div>
-              </div>
-
-              {/* Client Secret */}
-              <div>
-                <label className="text-xs font-semibold text-gray-700 uppercase">
-                  Client Secret
-                </label>
-                <div className="flex items-center gap-2 mt-2">
-                  <code className="flex-1 bg-white p-3 rounded border border-gray-300 text-sm font-mono">
-                    {project.oauth_client_secret}
-                  </code>
-                  <button
-                    onClick={() => copyToClipboard(project.oauth_client_secret)}
-                    className="p-2 hover:bg-white rounded transition-colors"
-                    title="Copiar"
-                  >
-                    <Copy
-                      size={20}
-                      className={copied ? 'text-green-600' : 'text-gray-600'}
-                    />
-                  </button>
-                </div>
-              </div>
+          {!completed && (
+            <div className="flex gap-4">
+              <Link
+                href={`/standard/${leadId}/step-4`}
+                className="flex-1 border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+              >
+                <ArrowLeft size={20} /> Voltar
+              </Link>
+              {!isReadOnly && (
+                <button
+                  onClick={handleConfirm}
+                  disabled={saving}
+                  className="flex-1 bg-tilapia-dark text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  Confirmar <ArrowRight size={20} />
+                </button>
+              )}
             </div>
           )}
-
-          {/* Instructions */}
-          <div className="bg-blue-50 p-6 rounded-lg space-y-3">
-            <h3 className="font-semibold text-blue-900">Como usar:</h3>
-            <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside">
-              <li>Acesse <a href="https://claude.ai" target="_blank" className="font-semibold hover:underline">claude.ai</a></li>
-              <li>Procure por &quot;MCP SAACS&quot; ou &quot;Custom MCP Connectors&quot;</li>
-              <li>Cole o Client ID e Client Secret acima</li>
-              <li>Comece a estruturar seu projeto com Claude!</li>
-            </ol>
-          </div>
-
-          {/* CTA Buttons */}
-          <div className="flex flex-col gap-3">
+          {completed && (
             <a
-              href="https://claude.ai"
-              target="_blank"
-              className="bg-saacs-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-saacs-700 transition-colors flex items-center justify-center gap-2"
+              href="https://saacs.com.br"
+              className="w-full border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
             >
-              Abrir Claude.ai <ExternalLink size={20} />
+              <ArrowLeft size={20} /> Voltar ao site SAACS
             </a>
-            <a
-              href="/"
-              className="border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors text-center"
-            >
-              Voltar para Home
-            </a>
-          </div>
-
-          {/* Email Notification */}
-          <div className="bg-amber-50 border-l-4 border-amber-400 p-4 text-sm text-amber-800">
-            Você também receberá um email com essas credenciais em breve.
-          </div>
+          )}
         </div>
       </QuestionCard>
     </div>
