@@ -117,7 +117,7 @@ export default function Step1() {
             <p className="text-sm text-gray-700">
               <strong className="text-tilapia-dark">💡 Lembre-se:</strong>
               <br />
-              <em>"Em todas as coisas o sucesso depende de uma preparação prévia, e sem tal preparação a falha é certa"</em>
+              <em>&quot;Em todas as coisas o sucesso depende de uma preparação prévia, e sem tal preparação a falha é certa&quot;</em>
               <br />
               <span className="text-gray-600">— Confúcio</span>
             </p>
