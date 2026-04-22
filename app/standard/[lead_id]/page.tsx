@@ -33,11 +33,12 @@ export default function Step1() {
         }
 
         // Verificar status em pre_anamnese_tilapia_standard
-        const { data: anamnese, error: anamneseError } = await supabase
+        const { data: anamneseList } = await supabase
           .from('pre_anamnese_tilapia_standard')
           .select('status')
           .eq('projeto_id', leadId)
-          .single()
+
+        const anamnese = Array.isArray(anamneseList) ? anamneseList[0] : null
 
         // Se já completado, redireciona para tela de resumo
         if (anamnese?.status === 'completo') {
