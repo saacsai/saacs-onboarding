@@ -81,10 +81,10 @@ export default function OnboardingQuestionStep({
           .from(config.tabelaRespostas)
           .select(`${campoResposta}, status`)
           .eq('projeto_id', leadId)
-          .single()
+          .single() as { data: any }
 
-        if (anamnese?.[campoResposta as keyof typeof anamnese]) {
-          setResposta(anamnese[campoResposta as keyof typeof anamnese] as string)
+        if (anamnese?.[campoResposta]) {
+          setResposta(anamnese[campoResposta])
         }
 
         if (anamnese?.status === 'completo') setIsReadOnly(true)
