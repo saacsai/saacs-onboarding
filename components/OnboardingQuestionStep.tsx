@@ -77,11 +77,12 @@ export default function OnboardingQuestionStep({
         }
 
         // Buscar resposta anterior
-        const { data: anamnese } = await supabase
+        const anamneseResult = await supabase
           .from(config.tabelaRespostas)
-          .select(`${campoResposta}, status`)
+          .select('*')
           .eq('projeto_id', leadId)
-          .single() as { data: any }
+          .single()
+        const anamnese = anamneseResult.data as any
 
         if (anamnese?.[campoResposta]) {
           setResposta(anamnese[campoResposta])

@@ -84,11 +84,12 @@ export default function OnboardingReviewStep({
         }
 
         // Buscar respostas
-        const { data: anamnese } = await supabase
+        const anamneseResult = await supabase
           .from(config.tabelaRespostas)
-          .select(camposResposta.join(', ') + ', status')
+          .select('*')
           .eq('projeto_id', leadId)
           .single()
+        const anamnese = anamneseResult.data as any
 
         if (anamnese?.status === 'completo') setIsReadOnly(true)
 
