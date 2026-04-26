@@ -48,21 +48,23 @@ export default function RootLayout({
             <div className="container mx-auto px-4">
               <div className="grid md:grid-cols-3 gap-8 mb-8">
                 <div>
-                  <h3 className="font-semibold mb-3">SAACS</h3>
+                  <h3 className="font-semibold mb-3">Ecossistema SAACS</h3>
                   <p className="text-sm text-gray-300">
-                    Software As A Chat Service — IA para resultados.
+                    IA para quem precisa de resultados.
                   </p>
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-3">TILAPIA</h3>
+                  <h3 className="font-semibold mb-3">TILAPIA Standard</h3>
                   <p className="text-sm text-gray-300">
-                    Metodologia para estruturação de projetos.
+                    Metodologia para estruturação e gestão de projetos.
                   </p>
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-3">Contato</h3>
+                  <h3 className="font-semibold mb-3">Dúvidas</h3>
                   <p className="text-sm text-gray-300">
-                    contato@saacs.com.br
+                    <a href="mailto:contato@saacs.com.br" className="hover:text-white transition-colors">
+                      contato@saacs.com.br
+                    </a>
                   </p>
                 </div>
               </div>
