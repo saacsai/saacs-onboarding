@@ -12,7 +12,7 @@ export default function Step4() {
       campoQuestao="questao_3"
       campoPlaceholder="placeholder_3"
       stepAnteriorUrl="/standard/[lead_id]/step-3"
-      proximoStepUrl="/standard/[lead_id]/step-5"
+      proximoStepUrl="/standard/[lead_id]/step-4b"
     />
   )
 }

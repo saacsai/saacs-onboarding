@@ -7,7 +7,7 @@ export default function Step6() {
   return (
     <OnboardingCompleteStep
       config={standardConfig}
-      stepAtual={6}
+      stepAtual={7}
       stepAnteriorUrl="/standard/[lead_id]/step-5"
     />
   )

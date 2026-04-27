@@ -6,7 +6,7 @@ import { OnboardingConfig } from '@/lib/onboarding-types'
 
 export const standardConfig: OnboardingConfig = {
   nome: 'TILAPIA Standard',
-  totalSteps: 6,
+  totalSteps: 7,
 
   tabelaRespostas: 'pre_anamnese_tilapia_standard',
   tabelaQuestoes: 'pre_anamnese_questoes',
