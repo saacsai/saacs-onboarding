@@ -3,14 +3,14 @@
 import TrilhaVideoStep from '@/components/TrilhaVideoStep'
 import { trilhaConfig } from '@/config/trilha.config'
 
-export default function TrilhaStep3() {
+export default function TrilhaStep5() {
   return (
     <TrilhaVideoStep
       config={trilhaConfig}
-      stepAtual={3}
-      step={trilhaConfig.steps[2]}
-      stepAnteriorUrl="/trilha/[lead_id]/step-2"
-      proximoStepUrl="/trilha/[lead_id]/step-4"
+      stepAtual={5}
+      step={trilhaConfig.steps[4]}
+      stepAnteriorUrl="/trilha/[lead_id]/step-4"
+      proximoStepUrl="/trilha/[lead_id]/conclusao"
     />
   )
 }
