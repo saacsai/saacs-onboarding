@@ -58,8 +58,8 @@ export const trilhaConfig: TrilhaConfig = {
   ],
 
   perguntas_conclusao: [
-    'Qual a diferença entre projeto e processo?',
-    'O que é o Passo Zero e para que serve?',
-    'O que você espera entregar ao final do seu primeiro projeto no TILAPIA?'
+    'Quais as diferenças entre processos e projetos?',
+    'Cite uma diferença entre usar o Claude sem e com o TILAPIA.',
+    'O que o TILAPIA não faz por você?'
   ]
 }

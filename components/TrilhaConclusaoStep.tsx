@@ -10,6 +10,7 @@ import ProgressBar from '@/components/ProgressBar'
 import QuestionCard from '@/components/QuestionCard'
 import { CheckCircle2, ArrowLeft, Send } from 'lucide-react'
 import { TrilhaConfig } from '@/config/trilha.config'
+import { supabase } from '@/lib/supabase'
 
 interface Props {
   config: TrilhaConfig
@@ -41,15 +42,28 @@ export default function TrilhaConclusaoStep({ config, stepAnteriorUrl }: Props) 
     try {
       setSending(true)
 
+      const respostas_trilha = config.perguntas_conclusao.map((pergunta, i) => ({
+        pergunta,
+        resposta: respostas[i]
+      }))
+
+      // Salvar respostas no Supabase — trigger atualiza compromisso para EXPLORADOR
+      await supabase
+        .from('tlp_projetos')
+        .update({
+          respostas_trilha,
+          trilha_concluida: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', leadId)
+
+      // Disparar webhook N8N para enviar email de credenciais
       await fetch(config.webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           project_id: leadId,
-          respostas_trilha: config.perguntas_conclusao.map((pergunta, i) => ({
-            pergunta,
-            resposta: respostas[i]
-          })),
+          respostas_trilha,
           timestamp: new Date().toISOString()
         })
       })
