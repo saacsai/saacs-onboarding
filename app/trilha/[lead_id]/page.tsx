@@ -18,10 +18,12 @@ export default function TrilhaIndex() {
         .eq('id', leadId)
         .single() as { data: any }
 
-      if (data?.trilha_concluida) {
+      const step = data?.trilha_step_atual || 1
+      const totalSteps = 5
+
+      if (data?.trilha_concluida || step > totalSteps) {
         router.replace(`/trilha/${leadId}/conclusao`)
       } else {
-        const step = data?.trilha_step_atual || 1
         router.replace(`/trilha/${leadId}/step-${step}`)
       }
     }
