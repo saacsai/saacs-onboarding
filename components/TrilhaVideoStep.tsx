@@ -88,32 +88,34 @@ export default function TrilhaVideoStep({
         videoId: step.youtube_id,
         playerVars: { rel: 0, modestbranding: 1, controls: 1 },
         events: {
+          onReady: () => {
+            // Polling universal — detecta fim do vídeo e anti-skip (funciona no Safari)
+            intervalRef.current = setInterval(() => {
+              const player = playerRef.current
+              if (!player?.getCurrentTime || !player?.getDuration) return
+              const current = player.getCurrentTime()
+              const duration = player.getDuration()
+              const state = player.getPlayerState()
+
+              // Anti-skip: se avançou mais de 2s além do máximo assistido, volta
+              if (state === 1 && current > maxWatchedRef.current + 2) {
+                player.seekTo(maxWatchedRef.current, true)
+              } else {
+                maxWatchedRef.current = Math.max(maxWatchedRef.current, current)
+              }
+
+              // Fim do vídeo: state ENDED=0 OU posição >= duração - 1s
+              if (duration > 0 && (state === 0 || current >= duration - 1)) {
+                setAssistido(true)
+                salvarProgresso()
+                clearInterval(intervalRef.current)
+              }
+            }, 1000)
+          },
           onStateChange: (event: any) => {
-            // ENDED = 0
-            if (event.data === 0) {
-              setAssistido(true)
-              salvarProgresso()
-              if (intervalRef.current) clearInterval(intervalRef.current)
-            }
-
-            // PLAYING = 1 — inicia monitoramento anti-skip
-            if (event.data === 1) {
-              intervalRef.current = setInterval(() => {
-                const player = playerRef.current
-                if (!player?.getCurrentTime) return
-                const current = player.getCurrentTime()
-                // Se avançou mais de 2s além do máximo assistido: volta
-                if (current > maxWatchedRef.current + 2) {
-                  player.seekTo(maxWatchedRef.current, true)
-                } else {
-                  maxWatchedRef.current = Math.max(maxWatchedRef.current, current)
-                }
-              }, 1000)
-            }
-
-            // PAUSED = 2 — para monitoramento
+            // PAUSED = 2 — atualiza maxWatched
             if (event.data === 2) {
-              if (intervalRef.current) clearInterval(intervalRef.current)
+              maxWatchedRef.current = playerRef.current?.getCurrentTime() || maxWatchedRef.current
             }
           }
         }
