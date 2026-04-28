@@ -7,6 +7,7 @@ import ProgressBar from '@/components/ProgressBar'
 import QuestionCard from '@/components/QuestionCard'
 import { ArrowRight, ArrowLeft, PlayCircle } from 'lucide-react'
 import { TrilhaConfig, TrilhaStep } from '@/config/trilha.config'
+import { supabase } from '@/lib/supabase'
 
 declare global {
   interface Window {
@@ -34,12 +35,39 @@ export default function TrilhaVideoStep({
   const router = useRouter()
   const leadId = params.lead_id as string
   const [assistido, setAssistido] = useState(false)
+  const [jaViu, setJaViu] = useState(false) // step já foi concluído antes
   const playerRef = useRef<any>(null)
   const containerId = `yt-player-${stepAtual}`
 
   const isPlaceholder = step.youtube_id.startsWith('PLACEHOLDER')
   const maxWatchedRef = useRef<number>(0)
   const intervalRef = useRef<any>(null)
+
+  // Verificar se já assistiu este step antes
+  useEffect(() => {
+    async function checkProgresso() {
+      const { data } = await supabase
+        .from('tlp_projetos')
+        .select('trilha_step_atual')
+        .eq('id', leadId)
+        .single() as { data: any }
+
+      if (data?.trilha_step_atual > stepAtual) {
+        setJaViu(true)
+        setAssistido(true)
+      }
+    }
+    if (leadId) checkProgresso()
+  }, [leadId, stepAtual])
+
+  // Salvar progresso ao concluir o step
+  const salvarProgresso = async () => {
+    await supabase
+      .from('tlp_projetos')
+      .update({ trilha_step_atual: stepAtual + 1 })
+      .eq('id', leadId)
+      .lt('trilha_step_atual', stepAtual + 1) // só avança, nunca volta
+  }
 
   useEffect(() => {
     if (isPlaceholder) return
@@ -64,6 +92,7 @@ export default function TrilhaVideoStep({
             // ENDED = 0
             if (event.data === 0) {
               setAssistido(true)
+              salvarProgresso()
               if (intervalRef.current) clearInterval(intervalRef.current)
             }
 
