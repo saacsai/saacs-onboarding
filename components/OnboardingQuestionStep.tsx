@@ -64,15 +64,31 @@ export default function OnboardingQuestionStep({
             .eq('id', projeto.client_id)
             .single()
 
-          const { data: questoes } = await supabase
-            .from(config.tabelaQuestoes)
-            .select(`${campoQuestao}, ${campoPlaceholder}`)
-            .eq('tipo_atividade', cliente?.atividade || 'Outros')
-            .single()
+          // Tenta com a atividade do cliente; fallback para 'Outros' se não encontrar
+          let questoes: any = null
+          if (cliente?.atividade) {
+            const { data } = await supabase
+              .from(config.tabelaQuestoes)
+              .select(`${campoQuestao}, ${campoPlaceholder}`)
+              .eq('tipo_atividade', cliente.atividade)
+              .single()
+            questoes = data
+          }
+          if (!questoes) {
+            const { data } = await supabase
+              .from(config.tabelaQuestoes)
+              .select(`${campoQuestao}, ${campoPlaceholder}`)
+              .eq('tipo_atividade', 'Outros')
+              .single()
+            questoes = data
+          }
 
           if (questoes) {
-            setPergunta((questoes as any)[campoQuestao] || '')
-            setPlaceholder((questoes as any)[campoPlaceholder] || '')
+            setPergunta(questoes[campoQuestao] || '')
+            setPlaceholder(questoes[campoPlaceholder] || '')
+          } else {
+            setPergunta('Descreva seu projeto ou contexto de trabalho')
+            setPlaceholder('Conte sobre o que você está desenvolvendo...')
           }
         }
 
